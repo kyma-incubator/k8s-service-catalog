@@ -182,6 +182,7 @@ func AddServiceAccountPerms(projectID, email, roles string) error {
 
 func RemoveServiceAccountPerms(projectID, email, roles string) error {
 	cmd := exec.Command("gcloud", "projects", "remove-iam-policy-binding", projectID, "--member", "serviceAccount:"+email, "--role", roles, "--format", "json")
+	fmt.Println("gcloud projects remove-iam-policy-binding" + projectID + " --member serviceAccount: "+email +" --role"+ roles+ " --format json")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to remove service account permissions: %v %s", string(output), err)

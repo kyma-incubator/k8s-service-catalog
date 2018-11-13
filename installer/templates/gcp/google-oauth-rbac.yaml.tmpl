@@ -18,9 +18,10 @@ apiVersion: v1
 kind: List
 items:
 - apiVersion: rbac.authorization.k8s.io/v1beta1
-  kind: ClusterRole
+  kind: Role
   metadata:
     name: "servicecatalog.k8s.io:google-oauth"
+    namespace: {{ .Namespace }}
   rules:
   # TODO: do not grant global access
   - apiGroups: [""]
@@ -31,15 +32,16 @@ items:
     verbs:     ["get","list","watch"]
 # give the google-oauth service account access to whats defined in its role.
 - apiVersion: rbac.authorization.k8s.io/v1beta1
-  kind: ClusterRoleBinding
+  kind: RoleBinding
   metadata:
     name: "servicecatalog.k8s.io:google-oauth"
+    namespace: {{ .Namespace }}
   roleRef:
     apiGroup: rbac.authorization.k8s.io
-    kind: ClusterRole
+    kind: Role
     name: "servicecatalog.k8s.io:google-oauth"
   subjects:
   - apiGroup: ""
     kind: ServiceAccount
     name: "google-oauth"
-    namespace: "google-oauth"
+    namespace: {{ .Namespace }}

@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleCloudPlatform/k8s-service-catalog/installer/pkg/gcp"
 	"github.com/GoogleCloudPlatform/k8s-service-catalog/installer/pkg/version"
 	"github.com/Masterminds/semver"
+	"github.com/Masterminds/sprig"
 	"github.com/spf13/cobra"
 )
 
@@ -352,7 +353,8 @@ func generateFileFromTmpl(dst, src string, data map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	tp, err := template.New("").Parse(string(b))
+
+	tp, err := template.New("").Funcs(sprig.FuncMap()).Parse(string(b))
 	if err != nil {
 		return err
 	}
@@ -506,7 +508,7 @@ func NewCheckDependenciesCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "check",
 		Short: "performs a dependency check",
-		Long: `This utility requires cfssl, gcloud, kubectl binaries to be 
+		Long: `This utility requires cfssl, gcloud, kubectl binaries to be
 present in PATH. This command performs the dependency check.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := checkDependencies(); err != nil {
