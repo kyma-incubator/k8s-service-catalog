@@ -536,7 +536,7 @@ func generateConfigs(genDir, templateDir string, filenames []string, data map[st
 
 func deployConfigs(dir string, filenames []string) error {
 	for _, f := range filenames {
-		fmt.Printf("Creating k8s recource using '%v' template\n", f)
+		fmt.Printf("Creating k8s resource using '%v' template\n", f)
 		output, err := exec.Command("kubectl", "apply", "-f", filepath.Join(dir, f+".yaml")).CombinedOutput()
 		// TODO: cleanup
 		if err != nil {
