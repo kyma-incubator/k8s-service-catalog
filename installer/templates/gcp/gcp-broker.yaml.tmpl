@@ -21,10 +21,16 @@
 #
 ##################################################################
 apiVersion: servicecatalog.k8s.io/v1beta1
-kind:{{if eq .Scope "cluster"}} ClusterServiceBroker {{else}} ServiceBroker {{end}}
+{{if eq .Scope "cluster"}}
+kind:ClusterServiceBroker
 metadata:
   name: gcp-broker
-{{if eq .Scope "namespace"}}  namespace: {{ .Namespace }} {{end}}
+{{else}}
+kind: ServiceBroker
+metadata:
+    name: gcp-broker
+    namespace: {{ .Namespace }}
+{{end}}
 spec:
   # URL to connect to  GCP Broker.
   #
