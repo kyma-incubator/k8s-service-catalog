@@ -489,10 +489,19 @@ func removeGCPBroker(bc *AddBrokerConfig) error {
 		return nil
 	}
 
-	// Remove the Service Broker Operator role.
-	err = gcp.RemoveServiceAccountPerms(projectID, brokerSAEmail, brokerSARole)
-	if err != nil {
+	// Check if RoleBinding is present
+	if bindingExists, err := gcp.CheckIfBindingExists(projectID, brokerSAEmail); err != nil {
 		return err
+	} else {
+		if bindingExists {
+			// Remove the Service Broker Operator role.
+			err = gcp.RemoveServiceAccountPerms(projectID, brokerSAEmail, brokerSARole)
+			if err != nil {
+				return err
+			}
+		} else {
+			fmt.Println("WARNING: There are no service account permissions to remove")
+		}
 	}
 
 	// Clean up all the associated keys.
