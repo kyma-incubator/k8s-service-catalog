@@ -102,8 +102,7 @@ After running the above command, `sc` should get installed in your GOPATH/bin di
   By default it is created in global context as a ClusterServiceBroker, 
   secrets and oauth deployment are installed in "google-auth" namespace.
   This behaviour can be changed using `--context` and `--namespace` flags.
-  If you want to install GCP Service Broker and all dependencies (ServiceClasses, secrets) 
-  in 'demo' namespace run:
+  If you want to install GCP Service Broker and all dependencies in 'demo' namespace run:
   ```bash
   sc add-gcp-broker --namespace demo --context namespace  
   ``` 

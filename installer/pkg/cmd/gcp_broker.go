@@ -107,10 +107,7 @@ type AddBrokerConfig struct {
 }
 
 func NewAddGCPBrokerCmd() *cobra.Command {
-	bc := &AddBrokerConfig{
-		Namespace: "service-catalog",
-		Scope:     "cluster",
-	}
+	bc := &AddBrokerConfig{}
 
 	c := &cobra.Command{
 		Use:   "add-gcp-broker",
@@ -490,18 +487,18 @@ func removeGCPBroker(bc *AddBrokerConfig) error {
 	}
 
 	// Check if RoleBinding is present
-	if bindingExists, err := gcp.CheckIfBindingExists(projectID, brokerSAEmail); err != nil {
+	bindingExists, err := gcp.CheckIfBindingExists(projectID, brokerSAEmail)
+	if err != nil {
 		return err
-	} else {
-		if bindingExists {
-			// Remove the Service Broker Operator role.
-			err = gcp.RemoveServiceAccountPerms(projectID, brokerSAEmail, brokerSARole)
-			if err != nil {
-				return err
-			}
-		} else {
-			fmt.Println("WARNING: There are no service account permissions to remove")
+	}
+	if bindingExists {
+		// Remove the Service Broker Operator role.
+		err = gcp.RemoveServiceAccountPerms(projectID, brokerSAEmail, brokerSARole)
+		if err != nil {
+			return err
 		}
+	} else {
+		fmt.Println("WARNING: There are no service account permissions to remove")
 	}
 
 	// Clean up all the associated keys.
