@@ -102,8 +102,17 @@ type AddBrokerConfig struct {
 	Namespace string
 
 	// scope of installation (cluster or namespace)
-	Scope          string
-	SkipDeprecated bool
+	Scope string
+}
+
+type RemoveBrokerConfig struct {
+	// namespace for gcp broker
+	Namespace string
+
+	// scope of installation (cluster or namespace)
+	Scope              string
+	SkipDeprecated     bool
+	SkipGCPIntegration bool
 }
 
 func NewAddGCPBrokerCmd() *cobra.Command {
@@ -393,10 +402,7 @@ func cleanupNewKey(email, key string) {
 }
 
 func NewRemoveGCPBrokerCmd() *cobra.Command {
-	bc := &AddBrokerConfig{
-		Namespace: "service-catalog",
-		Scope:     "cluster",
-	}
+	bc := &RemoveBrokerConfig{}
 
 	c := &cobra.Command{
 		Use:   "remove-gcp-broker",
@@ -416,11 +422,12 @@ func NewRemoveGCPBrokerCmd() *cobra.Command {
 	c.Flags().StringVar(&bc.Namespace, "namespace", gcpBrokerDefaultNamespace, "Namespace for the GCP broker or only for secrets (in cluster mode)")
 	c.Flags().StringVar(&bc.Scope, "scope", "cluster", "Scope of GCP broker: cluster or namespace")
 	c.Flags().BoolVar(&bc.SkipDeprecated, "skip-deprecated", false, "Skip deletion of deprecated resources")
+	c.Flags().BoolVar(&bc.SkipGCPIntegration, "skip-gcp-integration", false, "Skip deletion of GCP resources")
 
 	return c
 }
 
-func removeGCPBroker(bc *AddBrokerConfig) error {
+func removeGCPBroker(bc *RemoveBrokerConfig) error {
 	// Create temporary directory for k8s artifacts and other temporary files.
 	dir, err := ioutil.TempDir("/tmp", "service-catalog-gcp")
 	if err != nil {
@@ -458,6 +465,10 @@ func removeGCPBroker(bc *AddBrokerConfig) error {
 		if err != nil {
 			return fmt.Errorf("error deleting broker resources : %v", err)
 		}
+	}
+
+	if bc.SkipGCPIntegration {
+		return nil
 	}
 
 	projectID, err := gcp.GetConfigValue("core", "project")
