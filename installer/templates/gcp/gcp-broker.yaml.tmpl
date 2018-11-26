@@ -22,7 +22,7 @@
 ##################################################################
 apiVersion: servicecatalog.k8s.io/v1beta1
 {{if eq .Scope "cluster"}}
-kind:ClusterServiceBroker
+kind: ClusterServiceBroker
 metadata:
   name: gcp-broker
 {{else}}

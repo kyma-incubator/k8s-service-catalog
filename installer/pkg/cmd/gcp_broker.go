@@ -220,7 +220,7 @@ func addGCPBroker(bc *AddBrokerConfig) error {
 func enableRequiredAPIs(projectID string) error {
 	if err := gcp.EnableAPIs(requiredAPIs); err != nil {
 		var b bytes.Buffer
-		fmt.Fprintln(&b, "error enabling APIs. To make sure all APIs are correctly enabled, use links below:")
+		fmt.Fprintln(&b, "error enabling APIs: %v\nTo make sure all APIs are correctly enabled, use links below:", err)
 		for _, a := range requiredAPIs {
 			fmt.Fprintf(&b, "   %s: https://console.cloud.google.com/apis/library/%s/?project=%s\n", a, a, projectID)
 		}
