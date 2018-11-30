@@ -14,6 +14,18 @@
   version = "v1.4.0"
 
 [[projects]]
+  name = "github.com/Masterminds/sprig"
+  packages = ["."]
+  revision = "15f9564e7e9cf0da02a48e0d25f12a7b83559aa6"
+  version = "v2.16.0"
+
+[[projects]]
+  name = "github.com/aokoli/goutils"
+  packages = ["."]
+  revision = "3391d3790d23d03408670993e957e8f408993c34"
+  version = "v1.0.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/golang/glog"
   packages = ["."]
@@ -24,6 +36,24 @@
   packages = ["proto"]
   revision = "925541529c1fa6821df4e44ce2723319eb2be768"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/google/uuid"
+  packages = ["."]
+  revision = "9b3b1e0f5f99ae461456d768e7d301a7acdaa2d8"
+  version = "v1.1.0"
+
+[[projects]]
+  name = "github.com/huandu/xstrings"
+  packages = ["."]
+  revision = "f02667b379e2fb5916c3cda2cf31e0eb885d79f8"
+  version = "v1.2.0"
+
+[[projects]]
+  name = "github.com/imdario/mergo"
+  packages = ["."]
+  revision = "9f23e2d6bd2a77f959b2bf6acdbefd708a83a4a4"
+  version = "v0.3.6"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
@@ -42,6 +72,15 @@
   packages = ["."]
   revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
   version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+  packages = [
+    "pbkdf2",
+    "scrypt"
+  ]
+  revision = "eb0de9b17e854e9b1ccd9963efafc79862359959"
 
 [[projects]]
   branch = "master"
@@ -84,6 +123,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4e6b271a1f9da32bc559738694886cc72f6c69ebdcc0a53e0102a31169986ed8"
+  inputs-digest = "d9f1290d19cc1a8624bb13fb094f94a2d7650822a48070308445ccf5d111fd89"
   solver-name = "gps-cdcl"
   solver-version = 1
