@@ -20,7 +20,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: google-oauth
+  name: {{ .Namespace }}
   annotations:
     # record sc version information
     servicecatalog.k8s.io/sc-install-version: "{{ .Version }}"

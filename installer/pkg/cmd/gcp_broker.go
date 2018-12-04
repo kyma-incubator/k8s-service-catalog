@@ -44,11 +44,12 @@ const (
 	brokerSARole                   = "roles/servicebroker.operator"
 	gcpBrokerTemplateDir           = "templates/gcp/"
 	gcpBrokerDeprecatedTemplateDir = "templates/gcp-deprecated/"
+	gcpBrokerDefaultNamespace      = "google-auth"
 )
 
 var (
 	gcpBrokerDeprecatedFileNames = []string{"google-oauth-deployment", "service-account-secret"}
-	gcpBrokerFileNames           = []string{"namespace", "gcp-broker", "google-oauth-deployment", "service-account-secret", "google-oauth-rbac", "google-oauth-service-account"}
+	gcpBrokerFileNames           = []string{"namespace", "google-oauth-deployment", "service-account-secret", "google-oauth-rbac", "google-oauth-service-account", "gcp-broker"}
 
 	requiredAPIs = []string{
 		"servicebroker.googleapis.com",
@@ -95,13 +96,34 @@ var (
 	}
 )
 
+// AddBrokerConfig contains installation configuration.
+type AddBrokerConfig struct {
+	// namespace for gcp broker
+	Namespace string
+
+	// scope of installation (cluster or namespace)
+	Scope string
+}
+
+type RemoveBrokerConfig struct {
+	// namespace for gcp broker
+	Namespace string
+
+	// scope of installation (cluster or namespace)
+	Scope              string
+	SkipDeprecated     bool
+	SkipGCPIntegration bool
+}
+
 func NewAddGCPBrokerCmd() *cobra.Command {
-	return &cobra.Command{
+	bc := &AddBrokerConfig{}
+
+	c := &cobra.Command{
 		Use:   "add-gcp-broker",
 		Short: "Adds the Service Broker",
 		Long:  `Adds Google Cloud Platfrom Service Broker to Service Catalog`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := addGCPBroker(); err != nil {
+			if err := addGCPBroker(bc); err != nil {
 				fmt.Println("Failed to configure the Service Broker")
 				return err
 			}
@@ -109,9 +131,15 @@ func NewAddGCPBrokerCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	// add gcp-broker command flags
+	c.Flags().StringVar(&bc.Namespace, "namespace", gcpBrokerDefaultNamespace, "Namespace for the GCP broker")
+	c.Flags().StringVar(&bc.Scope, "scope", "cluster", "Scope of GCP broker: cluster or namespace")
+
+	return c
 }
 
-func addGCPBroker() error {
+func addGCPBroker(bc *AddBrokerConfig) error {
 	projectID, err := gcp.GetConfigValue("core", "project")
 	if err != nil {
 		return fmt.Errorf("error getting configured project value : %v", err)
@@ -123,7 +151,7 @@ func addGCPBroker() error {
 		return err
 	}
 
-	brokerSAName, err := constructSAName()
+	brokerSAName, err := constructSAName(bc.Namespace)
 	if err != nil {
 		return fmt.Errorf("error constructing service account name: %v", err)
 	}
@@ -167,6 +195,8 @@ func addGCPBroker() error {
 	data := map[string]interface{}{
 		"SvcAccountKey": key,
 		"GCPBrokerURL":  vb.URL,
+		"Namespace":     bc.Namespace,
+		"Scope":         bc.Scope,
 	}
 
 	// generate config files and deploy the GCP broker resources
@@ -190,7 +220,7 @@ func addGCPBroker() error {
 func enableRequiredAPIs(projectID string) error {
 	if err := gcp.EnableAPIs(requiredAPIs); err != nil {
 		var b bytes.Buffer
-		fmt.Fprintln(&b, "error enabling APIs. To make sure all APIs are correctly enabled, use links below:")
+		fmt.Fprintf(&b, "error enabling APIs: %v\nTo make sure all APIs are correctly enabled, use links below:\n", err)
 		for _, a := range requiredAPIs {
 			fmt.Fprintf(&b, "   %s: https://console.cloud.google.com/apis/library/%s/?project=%s\n", a, a, projectID)
 		}
@@ -205,7 +235,7 @@ func enableRequiredAPIs(projectID string) error {
 	return nil
 }
 
-func constructSAName() (string, error) {
+func constructSAName(namespace string) (string, error) {
 	bout, err := exec.Command("kubectl", "config", "view", "--output", "json").CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("error retriving kubernetes config: %s : %v", string(bout), err)
@@ -226,7 +256,7 @@ func constructSAName() (string, error) {
 	// Hash the cluster name using MD5 algorithm.
 	// This is because SA name only allows a maximum of 30 characters, so we need to reduce the length
 	// of the cluster name.
-	md5res := md5.Sum([]byte(fcn))
+	md5res := md5.Sum([]byte(fcn + namespace))
 	var md5bytes []byte = md5res[:]
 
 	// Use base32 to encode the MD5 hash result.
@@ -235,7 +265,7 @@ func constructSAName() (string, error) {
 	res := base32.StdEncoding.EncodeToString(md5bytes)
 
 	// Remove the last six "="s.
-	// The raw result of MD5 hash is 16 bytes, so base32 encoding result will alway have a padding
+	// The raw result of MD5 hash is 16 bytes, so base32 encoding result will always have a padding
 	// "======".
 	// This step can be replaced by base32.StdEncoding.WithPadding(base32.NoPadding) in Golang 1.9.
 	res = strings.Trim(res, "=")
@@ -372,12 +402,14 @@ func cleanupNewKey(email, key string) {
 }
 
 func NewRemoveGCPBrokerCmd() *cobra.Command {
-	return &cobra.Command{
+	bc := &RemoveBrokerConfig{}
+
+	c := &cobra.Command{
 		Use:   "remove-gcp-broker",
 		Short: "Remove the Service Broker",
 		Long:  `Removes Google Cloud Platform Service Broker from service catalog`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := removeGCPBroker(); err != nil {
+			if err := removeGCPBroker(bc); err != nil {
 				fmt.Println("Failed to remove the Service Broker")
 				return err
 			}
@@ -385,9 +417,17 @@ func NewRemoveGCPBrokerCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	// add gcp-broker command flags
+	c.Flags().StringVar(&bc.Namespace, "namespace", gcpBrokerDefaultNamespace, "Namespace for the GCP broker or only for secrets (in cluster mode)")
+	c.Flags().StringVar(&bc.Scope, "scope", "cluster", "Scope of GCP broker: cluster or namespace")
+	c.Flags().BoolVar(&bc.SkipDeprecated, "skip-deprecated", false, "Skip deletion of deprecated resources")
+	c.Flags().BoolVar(&bc.SkipGCPIntegration, "skip-gcp-integration", false, "Skip deletion of GCP resources")
+
+	return c
 }
 
-func removeGCPBroker() error {
+func removeGCPBroker(bc *RemoveBrokerConfig) error {
 	// Create temporary directory for k8s artifacts and other temporary files.
 	dir, err := ioutil.TempDir("/tmp", "service-catalog-gcp")
 	if err != nil {
@@ -395,9 +435,19 @@ func removeGCPBroker() error {
 	}
 
 	defer os.RemoveAll(dir)
+	data := map[string]interface{}{
+		"Namespace": bc.Namespace,
+		"Scope":     bc.Scope,
+	}
+
+	//remove namespace template from the list if it's not the default one
+	if bc.Namespace != gcpBrokerDefaultNamespace {
+		i := 0 //position of the "namespace.tpl"
+		gcpBrokerFileNames = append(gcpBrokerFileNames[:i], gcpBrokerFileNames[i+1:]...)
+	}
 
 	// remove GCP Broker k8s resources
-	err = generateConfigs(dir, gcpBrokerTemplateDir, gcpBrokerFileNames, nil)
+	err = generateConfigs(dir, gcpBrokerTemplateDir, gcpBrokerFileNames, data)
 	if err != nil {
 		return fmt.Errorf("error generating configs for the Service Broker: %v", err)
 	}
@@ -410,9 +460,15 @@ func removeGCPBroker() error {
 	// due to moving the google-oauth resources to a separate namespace, we
 	// must also remove deprecated Service Broker k8s resources for backwards
 	// compatibility
-	err = removeDeprecatedGCPBrokerResources()
-	if err != nil {
-		return fmt.Errorf("error deleting broker resources : %v", err)
+	if !bc.SkipDeprecated {
+		err = removeDeprecatedGCPBrokerResources()
+		if err != nil {
+			return fmt.Errorf("error deleting broker resources : %v", err)
+		}
+	}
+
+	if bc.SkipGCPIntegration {
+		return nil
 	}
 
 	projectID, err := gcp.GetConfigValue("core", "project")
@@ -420,7 +476,7 @@ func removeGCPBroker() error {
 		return fmt.Errorf("error getting configured project value : %v", err)
 	}
 
-	brokerSAName, err := constructSAName()
+	brokerSAName, err := constructSAName(bc.Namespace)
 	if err != nil {
 		return fmt.Errorf("error constructing service account name: %v", err)
 	}
@@ -441,10 +497,19 @@ func removeGCPBroker() error {
 		return nil
 	}
 
-	// Remove the Service Broker Operator role.
-	err = gcp.RemoveServiceAccountPerms(projectID, brokerSAEmail, brokerSARole)
+	// Check if RoleBinding is present
+	bindingExists, err := gcp.CheckIfBindingExists(projectID, brokerSAEmail)
 	if err != nil {
 		return err
+	}
+	if bindingExists {
+		// Remove the Service Broker Operator role.
+		err = gcp.RemoveServiceAccountPerms(projectID, brokerSAEmail, brokerSARole)
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Println("WARNING: There are no service account permissions to remove")
 	}
 
 	// Clean up all the associated keys.
@@ -491,6 +556,7 @@ func generateConfigs(genDir, templateDir string, filenames []string, data map[st
 
 func deployConfigs(dir string, filenames []string) error {
 	for _, f := range filenames {
+		fmt.Printf("Creating k8s resource using '%v' template\n", f)
 		output, err := exec.Command("kubectl", "apply", "-f", filepath.Join(dir, f+".yaml")).CombinedOutput()
 		// TODO: cleanup
 		if err != nil {
@@ -501,7 +567,9 @@ func deployConfigs(dir string, filenames []string) error {
 }
 
 func removeConfigs(dir string, filenames []string) error {
-	for _, f := range filenames {
+	for i := len(filenames) - 1; i >= 0; i-- {
+		f := filenames[i]
+		fmt.Printf("Removing k8s resource using '%v' template\n", f)
 		output, err := exec.Command("kubectl", "delete", "-f", filepath.Join(dir, f+".yaml"), "--ignore-not-found").CombinedOutput()
 		// TODO: cleanup
 		if err != nil {

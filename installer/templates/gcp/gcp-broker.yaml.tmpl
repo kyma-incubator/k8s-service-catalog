@@ -21,12 +21,19 @@
 #
 ##################################################################
 apiVersion: servicecatalog.k8s.io/v1beta1
+{{if eq .Scope "cluster"}}
 kind: ClusterServiceBroker
 metadata:
   name: gcp-broker
+{{else}}
+kind: ServiceBroker
+metadata:
+    name: gcp-broker
+    namespace: {{ .Namespace }}
+{{end}}
 spec:
   # URL to connect to  GCP Broker.
-  # 
+  #
   # Production servicebroker API; not staging
   # Project: seans-walkthrough, local user project, requires inital creation of virtual broker through CLI.
   # url:  https://servicebroker.googleapis.com/v1alpha1/projects/seans-walkthrough/brokers/gcp-broker
@@ -40,4 +47,4 @@ spec:
     bearer:
       secretRef:
         name: gcp-svc-account-secret
-        namespace: google-oauth
+        namespace: {{ .Namespace }}

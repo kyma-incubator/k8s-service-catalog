@@ -97,12 +97,20 @@ After running the above command, `sc` should get installed in your GOPATH/bin di
   ```
 - To add the Service Broker to the Service Catalog, run
   ```bash
-  sc add-gcp-broker
+  sc add-gcp-broker  
   ```
+  By default it is created in global context as a ClusterServiceBroker, 
+  secrets and oauth deployment are installed in "google-auth" namespace.
+  This behaviour can be changed using `--context` and `--namespace` flags.
+  If you want to install GCP Service Broker and all dependencies in 'demo' namespace run:
+  ```bash
+  sc add-gcp-broker --namespace demo --context namespace  
+  ``` 
 - To remove the Service Broker from the Service Catalog, run
   ```bash
   sc remove-gcp-broker
   ```
+  This command accepts the same set of flags as add-gcp-broker
 
 ## Build
 

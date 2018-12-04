@@ -249,6 +249,21 @@ func RemoveAllServiceAccountKeys(email string) error {
 	return nil
 }
 
+func CheckIfBindingExists(project, email string) (bool, error) {
+	cmd := exec.Command("gcloud", "projects", "get-iam-policy", project, "--flatten=bindings[].members", "--filter=bindings.members:"+email, "--format=json")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return false, fmt.Errorf("failed to list bindings: %s : %v", string(out), err)
+	}
+	var bindings []interface{}
+	err = json.Unmarshal(out, &bindings)
+	if err != nil {
+		return false, fmt.Errorf("failed to unmarshal bindings: %s : %v", string(out), err)
+	}
+
+	return len(bindings) > 0, nil
+}
+
 // RemoveServiceAccountKey removes the given key from the service account.
 func RemoveServiceAccountKey(email, keyID string) {
 	cmd := exec.Command("gcloud", "iam", "service-accounts", "keys", "delete", keyID, "--iam-account", email, "--quiet" /*disable interactive mode*/)
